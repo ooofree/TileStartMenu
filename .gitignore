@@ -14,3 +14,6 @@ appcatalog.json
 
 # 真机验证素材：含个人桌面截图与已安装应用清单
 assets/
+
+# 发布包产物（二进制不进仓库，走 GitHub Releases）
+dist/
