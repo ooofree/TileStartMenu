@@ -12,7 +12,7 @@ Windows 11 上的 **Win8.1 风格全屏磁贴开始菜单**。C# / .NET 9 / WPF 
 
 不想装 SDK 的话，直接下 **v0.2.0** 发布包：
 
-**[⬇ TileStartMenu-v0.2.0-win-x64.zip](https://github.com/ooofree/TileStartMenu/releases/download/v0.2.0/TileStartMenu-v0.2.0-win-x64.zip)**（约 145 KB）
+**[⬇ TileStartMenu-v0.2.0-win-x64.zip](https://github.com/ooofree/TileStartMenu/releases/download/v0.2.0/TileStartMenu-v0.2.0-win-x64.zip)**（约 158 KB，免编译）
 
 1. 解压到任意目录，**包内文件 + 使用说明必须放在一起**；
 2. 双击 `TileStartMenu.App.exe`，程序不显主窗口，驻留系统托盘；
