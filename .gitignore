@@ -1,0 +1,16 @@
+# 构建产物
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.suo
+*.tmp
+
+# 本地运行时数据（含本机磁贴配置、应用清单与调试日志，绝不入库）
+*.log
+menu.json
+menu.json.*
+appcatalog.json
+
+# 真机验证素材：含个人桌面截图与已安装应用清单
+assets/

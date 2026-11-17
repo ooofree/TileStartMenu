@@ -1,0 +1,16 @@
+<Window x:Class="TileStartMenu.App.UI.InputDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="380" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Title="输入">
+    <StackPanel Margin="16">
+        <TextBlock x:Name="PromptText" FontWeight="SemiBlack" Margin="0,0,0,8" />
+        <TextBox x:Name="InputBox" Margin="0,0,0,12" Padding="4" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="OkButton" Content="确定" Width="80" Margin="0,0,8,0" IsDefault="True" />
+            <Button x:Name="CancelButton" Content="取消" Width="80" IsCancel="True" />
+        </StackPanel>
+    </StackPanel>
+</Window>

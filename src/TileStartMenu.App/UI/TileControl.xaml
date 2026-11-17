@@ -1,0 +1,33 @@
+<UserControl x:Class="TileStartMenu.App.UI.TileControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             UseLayoutRounding="True"
+             Background="Transparent">
+    <!-- Metro 直角磁贴：整个磁贴都是点击热区 -->
+    <Border x:Name="Root" CornerRadius="0" BorderThickness="0" SnapsToDevicePixels="True">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <!-- 图标区：PNG 等比缩放；无图标时回退为名称首字大字块 -->
+            <Grid Grid.Row="0">
+                <Image x:Name="IconImage" Stretch="Uniform"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       RenderOptions.BitmapScalingMode="HighQuality"
+                       Margin="0,8,0,0" />
+                <TextBlock x:Name="FallbackChar"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontSize="36" FontWeight="Bold"
+                           Foreground="#3DFFFFFF"
+                           Text="?" />
+            </Grid>
+            <!-- 左下角白色文字标签 -->
+            <TextBlock x:Name="Label" Grid.Row="1"
+                       Foreground="White" FontSize="12"
+                       TextTrimming="CharacterEllipsis"
+                       HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                       Margin="8,0,8,6" />
+        </Grid>
+    </Border>
+</UserControl>

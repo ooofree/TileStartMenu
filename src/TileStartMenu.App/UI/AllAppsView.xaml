@@ -1,0 +1,24 @@
+<UserControl x:Class="TileStartMenu.App.UI.AllAppsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             UseLayoutRounding="True"
+             Background="Transparent">
+    <Grid>
+        <ListBox x:Name="List" Background="Transparent" Foreground="White"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 VirtualizingStackPanel.IsVirtualizing="True"
+                 VirtualizingStackPanel.VirtualizationMode="Recycling"
+                 SelectionMode="Single">
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="Padding" Value="12,8" />
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                </Style>
+            </ListBox.ItemContainerStyle>
+        </ListBox>
+        <TextBlock x:Name="EmptyHint" Visibility="Collapsed"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Foreground="#8B98A8" FontSize="16"
+                   Text="正在枚举本机应用…" />
+    </Grid>
+</UserControl>
