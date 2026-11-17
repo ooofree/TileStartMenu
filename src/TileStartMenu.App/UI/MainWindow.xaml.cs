@@ -209,6 +209,7 @@ public partial class MainWindow : Window, IMenuWindow
         Top = SystemParameters.VirtualScreenTop;
         Width = SystemParameters.VirtualScreenWidth;
         Height = SystemParameters.VirtualScreenHeight;
+        Dbg($"WIN left={Left:0.0} top={Top:0.0} width={Width:0.0} height={Height:0.0} vsw={SystemParameters.VirtualScreenWidth:0.0} vsh={SystemParameters.VirtualScreenHeight:0.0}");
 
         if (!IsMenuOpen)
         {
@@ -220,6 +221,8 @@ public partial class MainWindow : Window, IMenuWindow
         Topmost = true;
         Focus();
         UpdateVisible();
+        // PointToScreen 要等窗口渲染后才可靠，低优先级排到布局/渲染完成后再打
+        Dispatcher.BeginInvoke(new Action(LogGeom), System.Windows.Threading.DispatcherPriority.Loaded);
 
         var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(150));
         RootGrid.BeginAnimation(OpacityProperty, fade);
@@ -261,6 +264,52 @@ public partial class MainWindow : Window, IMenuWindow
         DateText.Text = now.ToString("yyyy/M/d ddd");
     }
 
+    /// <summary>渲染后打印窗口/固定元素的物理坐标，用于诊断"窗口是否大于屏幕"。</summary>
+    private void LogGeom()
+    {
+        try
+        {
+            var cp = ClockText.PointToScreen(new Point(0, 0));
+            var ap = AllAppsEntry.PointToScreen(new Point(0, 0));
+            var sp = SemanticZoomButton.PointToScreen(new Point(0, 0));
+            Dbg($"GEOM actualW={ActualWidth:0.0} actualH={ActualHeight:0.0} " +
+                $"contentW={TileCanvas.Width:0.0} contentH={TileCanvas.Height:0.0} " +
+                $"clockScreen=({cp.X:0},{cp.Y:0}) appsScreen=({ap.X:0},{ap.Y:0}) gearScreen=({sp.X:0},{sp.Y:0}) " +
+                $"rootPhys=({Left:0},{Top:0},{Width:0.0},{Height:0.0})");
+        }
+        catch (Exception ex) { Dbg($"GEOM error: {ex.Message}"); }
+    }
+
+    /// <summary>
+    /// 自渲染快照：用 RenderTargetBitmap 把 RootGrid 按 DIP 1:1 画成 PNG 存盘，
+    /// 不依赖外部截屏、不受 DPI 缩放/抢焦点影响。SHOT 管道命令与 F11 都走这里。
+    /// </summary>
+    public void SaveSelfRender(string path)
+    {
+        try
+        {
+            double w = RootGrid.ActualWidth, h = RootGrid.ActualHeight;
+            if (w < 10 || h < 10)
+            {
+                Dbg($"SHOT skip: root too small {w:0.0}x{h:0.0} (menu hidden?)");
+                return;
+            }
+            int pw = (int)Math.Round(w);
+            int ph = (int)Math.Round(h);
+            var rtb = new System.Windows.Media.Imaging.RenderTargetBitmap(pw, ph, 96, 96,
+                System.Windows.Media.PixelFormats.Pbgra32);
+            RootGrid.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            RootGrid.Arrange(new Rect(new Size(w, h)));
+            rtb.Render(RootGrid);
+            var enc = new System.Windows.Media.Imaging.PngBitmapEncoder();
+            enc.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(rtb));
+            using var fs = new FileStream(path, FileMode.Create, FileAccess.Write);
+            enc.Save(fs);
+            Dbg($"SHOT path={path} size={pw}x{ph}");
+        }
+        catch (Exception ex) { Dbg($"SHOT error: {ex.GetType().Name}: {ex.Message}"); }
+    }
+
     // ==================== 布局（纯数据） ====================
 
     private void RebuildLayout()
@@ -274,9 +323,13 @@ public partial class MainWindow : Window, IMenuWindow
         // 分组标题现在挂在 TileCanvas 上，TileCanvas.Children.Clear() 已统一清理，
         // 不再从 ContentGrid 里按类型挑 TextBlock 删除（那会误伤时钟等装饰元素）。
 
-        double viewH = Math.Max(ActualHeight - 100, 400);
-        // 每组最多能放几行（纵向）
-        int maxRows = Math.Max(2, (int)Math.Floor((viewH + TileMetrics.Gap) / (TileMetrics.Cell + TileMetrics.Gap)));
+        // 每列可叠多少行（DIP）：扣掉顶部时钟留白与底部「所有应用」条。
+        // 注意 WPF 的 ActualHeight 本就是 DIP，不要再乘 DPI 缩放或取物理像素。
+        const double TopReserve = 90;    // 顶部时钟/电源/齿轮留白
+        const double BottomReserve = 80; // 底部「所有应用 ↓」条
+        double usableH = Math.Max(ActualHeight - TopReserve - BottomReserve, 300);
+        int rowsPerColumn = Math.Max(2, (int)Math.Floor((usableH + TileMetrics.Gap) / (TileMetrics.Cell + TileMetrics.Gap)));
+        Dbg($"LAYOUT rowsPerColumn={rowsPerColumn} usableH={usableH:0.0} actualHeight={ActualHeight:0.0}");
 
         // 垂直居中：计算所有分组的最大内容高度，把整组磁贴块居中
         double maxGroupH = 0;
@@ -286,7 +339,7 @@ public partial class MainWindow : Window, IMenuWindow
             {
                 var tiles = cfg.Tiles.Where(t => t.GroupId == g.Id && t.Pinned).OrderBy(t => t.Order).ToList();
                 var sizes = tiles.Select(t => new Size(TileMetrics.Width(t.Size), TileMetrics.Height(t.Size))).ToList();
-                var rects = MetroPack.Layout(sizes, maxRows);
+                var rects = MetroPack.Layout(sizes, rowsPerColumn);
                 var cs = MetroPack.ContentSize(rects);
                 if (cs.Height > maxGroupH) maxGroupH = cs.Height;
                 x0 += cs.Width + GroupGap;
@@ -319,11 +372,12 @@ public partial class MainWindow : Window, IMenuWindow
             gl.HeaderText = header;
 
             gl.PanelX = x;
-            gl.PanelHeight = viewH;
+            gl.PanelHeight = usableH;
             var tiles = cfg.Tiles.Where(t => t.GroupId == g.Id && t.Pinned).OrderBy(t => t.Order).ToList();
             var sizes = tiles.Select(t => new Size(TileMetrics.Width(t.Size), TileMetrics.Height(t.Size))).ToList();
-            // 纵向打包：maxRows 行，自动决定列数
-            var rects = MetroPack.Layout(sizes, maxRows);
+            // 列优先打包：rowsPerColumn 行/列，自动向右扩列；逐块打 unit 网格坐标 + 重叠/越界自检
+            var tileNames = tiles.Select(t => t.Name).ToList();
+            var rects = MetroPack.Layout(sizes, rowsPerColumn, tileNames, Dbg);
             for (int i = 0; i < tiles.Count; i++)
             {
                 gl.Tiles.Add(new TilePlacement { Tile = tiles[i], Rect = rects[i] });
@@ -604,8 +658,8 @@ public partial class MainWindow : Window, IMenuWindow
 
         var others = best.Tiles.Where(t => t.Tile.Id != _pressTile.Tile.Id).ToList();
         var sizes = others.Select(t => new Size(t.Rect.Width, t.Rect.Height)).ToList();
-        int maxRows = Math.Max(2, (int)Math.Floor((best.PanelHeight + TileMetrics.Gap) / (TileMetrics.Cell + TileMetrics.Gap)));
-        var rects = MetroPack.Layout(sizes, maxRows);
+        int rowsPerColumn = Math.Max(2, (int)Math.Floor((best.PanelHeight + TileMetrics.Gap) / (TileMetrics.Cell + TileMetrics.Gap)));
+        var rects = MetroPack.Layout(sizes, rowsPerColumn);
 
         double mx = winPos.X - best.PanelX;
         double my = winPos.Y - _vOffset;
@@ -619,7 +673,7 @@ public partial class MainWindow : Window, IMenuWindow
         }
 
         sizes.Insert(index, new Size(TileMetrics.Width(_pressTile.Tile.Size), TileMetrics.Height(_pressTile.Tile.Size)));
-        var preview = MetroPack.Layout(sizes, maxRows);
+        var preview = MetroPack.Layout(sizes, rowsPerColumn);
         var dragRect = preview[index];
 
         Canvas.SetLeft(_dropOutline!, best.PanelX + dragRect.X);
@@ -890,6 +944,16 @@ public partial class MainWindow : Window, IMenuWindow
     {
         if (_zoomOpen) ExitZoom();
         else EnterZoom();
+    }
+
+    /// <summary>管道 ZOOM 命令的无焦点入口。</summary>
+    public void CommandToggleZoom() => ToggleZoom();
+
+    /// <summary>管道 SCROLL 命令：横向滚到指定 offset 并打日志（验证翻页）。</summary>
+    public void CommandScroll(double x)
+    {
+        WallScroll.ScrollToHorizontalOffset(x);
+        Dbg($"PIPE-SCROLL to={x:0} actualOffset={WallScroll.HorizontalOffset:0}");
     }
 
     private void EnterZoom()
@@ -1445,6 +1509,17 @@ public partial class MainWindow : Window, IMenuWindow
                     }
                     n++;
                 }
+            e.Handled = true;
+            return;
+        }
+
+        // F11：调试键——自渲染快照存到 %LOCALAPPDATA%\TileStartMenu\wall-render.png
+        if (e.Key == Key.F11)
+        {
+            var p = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "TileStartMenu", "wall-render.png");
+            SaveSelfRender(p);
             e.Handled = true;
             return;
         }

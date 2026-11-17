@@ -73,6 +73,9 @@ public sealed class AppSettings
 
     /// <summary>种子数据结构版本。&lt;2 表示旧的"全量 547 磁贴"产物，启动时迁移到 v4 基础种子。</summary>
     public int SeedVersion { get; set; } = 0;
+
+    /// <summary>是否在桌面/任意位置 .lnk/.exe 右键菜单注册"固定到开始菜单"。默认 true。</summary>
+    public bool DesktopContextMenu { get; set; } = true;
 }
 
 /// <summary>整个菜单的持久化模型，序列化为 menu.json。</summary>

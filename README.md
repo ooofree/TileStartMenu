@@ -4,17 +4,17 @@ Windows 11 上的 **Win8.1 风格全屏磁贴开始菜单**。C# / .NET 9 / WPF 
 
 按 **Win 键**唤起全屏磁贴墙，替代系统开始菜单；磁贴可真实启动本机应用，底部 App Bar 操作、四档尺寸、拖拽分组、全部应用列表固定/取消固定，右上角集成电源。
 
-> 状态：迭代至 v5（完全模仿 Win8.1 视觉规范），界面仍在持续打磨中。验收口径见 `docs/验收报告.md`，代码问题清单见 `docs/代码审查.md`。
+> 状态：v0.2.0（Win8.1 视觉与排布已重做：纵向多行铺满后向右扩列）。验收口径见 `docs/验收报告.md`，排布算法见 `docs/磁贴墙布局.md`，右键固定见 `docs/右键固定.md`，代码问题清单见 `docs/代码审查.md`。
 
 *A Win8.1-style fullscreen tile Start Menu for Windows 11, written in C# / .NET 9 / WPF with no third-party dependencies. Pressing the Win key opens a fullscreen tile wall; tiles launch real applications; right-click raises a bottom App Bar for pin/unpin, resize and colour; power actions (shutdown / restart / sleep / lock / sign out) are built in.*
 
 ## 下载（免编译）
 
-不想装 SDK 的话，直接下 **v0.1.0** 发布包：
+不想装 SDK 的话，直接下 **v0.2.0** 发布包：
 
-**[⬇ TileStartMenu-v0.1.0-win-x64.zip](https://github.com/ooofree/TileStartMenu/releases/download/v0.1.0/TileStartMenu-v0.1.0-win-x64.zip)**（约 145 KB）
+**[⬇ TileStartMenu-v0.2.0-win-x64.zip](https://github.com/ooofree/TileStartMenu/releases/download/v0.2.0/TileStartMenu-v0.2.0-win-x64.zip)**（约 145 KB）
 
-1. 解压到任意目录，**包内 5 个文件 + 使用说明必须放在一起**；
+1. 解压到任意目录，**包内文件 + 使用说明必须放在一起**；
 2. 双击 `TileStartMenu.App.exe`，程序不显主窗口，驻留系统托盘；
 3. 前置：Windows 10/11 x64 + [.NET 9 桌面运行库](https://dotnet.microsoft.com/download/dotnet/9.0)。
 
@@ -43,6 +43,7 @@ Windows 11 上的 **Win8.1 风格全屏磁贴开始菜单**。C# / .NET 9 / WPF 
 | 组合键放行 | Win+R / Win+E / Win+D / Win+Shift+S 等一切 Win+字母/功能键组合**不拦截**，由钩子补送 Win 按下后原样交给系统 |
 | 右键磁贴 | 屏幕**底部升起 App Bar**（不是光标旁小菜单）：取消固定 / 删除 / 调整大小 / 改颜色 / 图标规格 / 重命名；Esc 或点空白收起 |
 | Pin / Unpin | 「全部应用」列表里右键 → 底部 App Bar「固定到开始菜单」，磁贴出现在墙尾；墙上右键 →「取消固定」，磁贴消失但记录保留，可再次固定 |
+| 快捷方式右键固定 | 在**桌面图标或任意 .lnk 快捷方式**上右键 → 「固定到开始菜单」即可一步上墙；同类 `.exe` 也支持。同一目标重复固定不会产生重复磁贴；托盘菜单可一键注册/取消注册该系统集成 |
 | 四档尺寸 | 小 1×1 / 中 2×2 / 宽 4×2 / 大 4×4，「调整大小」循环切换，网格即时重排并持久化 |
 | 拖拽 | 按住磁贴移动超过 6px 进入拖拽：半透明跟随、其余磁贴实时让位预览；可换序、可拖入其他分组 |
 | 分组 | 按列横向排布；右键空白墙 → 底部 App Bar「自定义」：新建分组 / 重命名分组 / 主题色 |
@@ -145,9 +146,27 @@ src\TileStartMenu.App\bin\Release\net9.0-windows\TileStartMenu.App.exe
 
 ## 八、已知限制
 
-1. 视觉重做进行中：横向列布局、大图标、底部 App Bar、语义缩放（齿轮进入分组总览、拖块重排、Ctrl+滚轮）均已落地；最终 Win8.1 并排视觉对照待终验。
+1. 视觉已按 Win8.1 重做：横向多列布局、纵向多行铺满后向右扩列、大图标、底部 App Bar、语义缩放（齿轮进入分组总览、拖块重排、Ctrl+滚轮）均已落地。
 2. 电源功能 UI 与核心服务已接通：点电源磁贴弹二次确认浮层「确定要关机吗？…取消/确定」，取消或浮层外关闭不会误触发；真实关机/重启仍需用户在浮层上点「确定」。
 3. 「全部应用」列表目前用纯色字母块占位图标，未逐个提取 256px 高清图标（墙上磁贴图标为真实 256×256 提取）。
 4. 未做多显示器适配：菜单只覆盖主屏。
 5. 「工具」「网页」两个空分组暂无删除入口（可重命名/新建）。
 6. UWP 应用的 256px 图标提取走 Shell 路径，理论可用，尚未单独抽样验证。
+7. 磁贴总数很多时（约 70 个以上）才会横向溢出需要拖动翻页；本机未能凑够数量做真机取证，`WALL-DRAG` 处理器本身已验证可用。
+8. Win11 的现代右键菜单会折叠传统菜单项：右键快捷方式若没直接看到「固定到开始菜单」，点一次「显示更多选项」即可。
+
+---
+
+## 九、更新记录
+
+### v0.2.0
+
+- **磁贴墙排布重做（Win8.1 网格语义）**：单位格以「小磁贴」为基准（小 1×1、中 2×2、宽 4×2、大 4×4），组内**先自上而下填满一列，再向右开新列**；两小叠放与一中等高、两中叠放与一大等高，边全部落在 unit 边界；1×1 空洞可由小磁贴回填。修复了此前把「每列能放几行」误当成「最多几列」导致的「所有磁贴挤在一行」。
+- **快捷方式右键固定**：桌面图标 / 任意 `.lnk` 与 `.exe` 右键新增「固定到开始菜单」「从开始菜单取消固定」，走 `HKCU`（无需管理员），支持开关；重复固定不产生重复磁贴。
+- **应用图标**：新增多尺寸 `app.ico` 并嵌入 exe，托盘与右键菜单项复用同一图标。
+- 新增无头自检入口 `TileStartMenu.App.exe --layout-test`，输出排布坐标表与 `LAYOUT-VIOLATION` 计数。
+
+### v0.1.0
+
+- 首个公开版本：Win 键唤起全屏磁贴墙、四档尺寸、底部 App Bar、拖拽分组、语义缩放、全部应用（247 条）、电源磁贴与二次确认。
+

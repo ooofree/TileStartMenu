@@ -48,6 +48,7 @@ public sealed class TrayIconHost : IDisposable
     private const int ID_RESTORE_WIN = 1005;
     private const int ID_LAST_INVOKE = 1006;
     private const int ID_EXIT = 1007;
+    private const int ID_TOGGLE_CONTEXT_MENU = 1008;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct NOTIFYICONDATAW
@@ -164,6 +165,9 @@ public sealed class TrayIconHost : IDisposable
     /// <summary>切换开机自启勾选。</summary>
     public event Action? OnToggleAutostart;
 
+    /// <summary>切换右键菜单"固定到开始菜单"verb 注册。</summary>
+    public event Action? OnToggleContextMenu;
+
     /// <summary>打开配置目录。</summary>
     public event Action? OnOpenConfigDir;
 
@@ -176,6 +180,7 @@ public sealed class TrayIconHost : IDisposable
     /// <summary>由宿主刷新菜单勾选状态（配置变化时调用）。</summary>
     public bool WinKeyChecked { get; set; }
     public bool AutostartChecked { get; set; }
+    public bool ContextMenuChecked { get; set; }
 
     public TrayIconHost()
     {
@@ -272,6 +277,8 @@ public sealed class TrayIconHost : IDisposable
                 "启用 Win 键接管");
             AppendMenuW(hMenu, MF_STRING | (AutostartChecked ? MF_CHECKED : MF_UNCHECKED), ID_TOGGLE_AUTOSTART,
                 "开机自启");
+            AppendMenuW(hMenu, MF_STRING | (ContextMenuChecked ? MF_CHECKED : MF_UNCHECKED), ID_TOGGLE_CONTEXT_MENU,
+                "在右键菜单中注册");
             AppendMenuW(hMenu, MF_STRING, ID_OPEN_CONFIG_DIR, "打开配置目录");
             AppendMenuW(hMenu, MF_SEPARATOR, 0, null);
             AppendMenuW(hMenu, MF_STRING, ID_RESTORE_WIN, "恢复系统默认 Win 键");
@@ -301,6 +308,7 @@ public sealed class TrayIconHost : IDisposable
                 case ID_OPEN_MENU: OnOpenMenu?.Invoke(); break;
                 case ID_TOGGLE_WINKEY: OnToggleWinKey?.Invoke(); break;
                 case ID_TOGGLE_AUTOSTART: OnToggleAutostart?.Invoke(); break;
+                case ID_TOGGLE_CONTEXT_MENU: OnToggleContextMenu?.Invoke(); break;
                 case ID_OPEN_CONFIG_DIR: OnOpenConfigDir?.Invoke(); break;
                 case ID_RESTORE_WIN: OnRestoreWin?.Invoke(); break;
                 case ID_EXIT: OnExit?.Invoke(); break;
