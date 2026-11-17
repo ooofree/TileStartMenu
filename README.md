@@ -8,6 +8,18 @@ Windows 11 上的 **Win8.1 风格全屏磁贴开始菜单**。C# / .NET 9 / WPF 
 
 *A Win8.1-style fullscreen tile Start Menu for Windows 11, written in C# / .NET 9 / WPF with no third-party dependencies. Pressing the Win key opens a fullscreen tile wall; tiles launch real applications; right-click raises a bottom App Bar for pin/unpin, resize and colour; power actions (shutdown / restart / sleep / lock / sign out) are built in.*
 
+## 下载（免编译）
+
+不想装 SDK 的话，直接下 **v0.1.0** 发布包：
+
+**[⬇ TileStartMenu-v0.1.0-win-x64.zip](https://github.com/ooofree/TileStartMenu/releases/download/v0.1.0/TileStartMenu-v0.1.0-win-x64.zip)**（约 145 KB）
+
+1. 解压到任意目录，**包内 5 个文件 + 使用说明必须放在一起**；
+2. 双击 `TileStartMenu.App.exe`，程序不显主窗口，驻留系统托盘；
+3. 前置：Windows 10/11 x64 + [.NET 9 桌面运行库](https://dotnet.microsoft.com/download/dotnet/9.0)。
+
+全部版本见 [Releases](https://github.com/ooofree/TileStartMenu/releases)。
+
 ## 截图
 
 | 磁贴墙 | 全部应用 |
